@@ -21,12 +21,21 @@
             font-size: 15px;
         }
 
+        .send:disabled {
+            background-color: rgb(150, 150, 150);
+            cursor: not-allowed;
+        }
+
         .field {
             padding: 12px 15px;
             border-radius: 10px;
             border-width: 1px;
             font-size: 15px;
             flex-grow: 1;
+        }
+
+        .field:disabled {
+            background-color: rgb(240, 240, 240);
         }
 
         .chat-input-container {
@@ -74,6 +83,11 @@
             overflow: scroll;
             scrollbar-width: none;
         }
+
+        .loading-text {
+            font-style: italic;
+            color: #666;
+        }
     </style>
 </head>
 
@@ -86,7 +100,7 @@
 
     <script src="https://unpkg.com/supersimpledev/babel.js"></script>
     <script type="text/babel">
-        function ChatInput({ chatMessages, setChatMessages, }) {
+        function ChatInput({ chatMessages, setChatMessages, isLoading, setIsLoading }) {
 
             const [inputText, setInputText] = React.useState('')
 
@@ -95,6 +109,7 @@
             }
 
             async function sendMessage() {
+                if (!inputText.trim()) return;
                 const newChatMessages = [
                     ...chatMessages,
                     {
@@ -104,7 +119,10 @@
                     }
                 ];
                 setChatMessages(newChatMessages);
+                setInputText('');
+                setIsLoading(true);
                 const response = await Chatbot.getResponseAsync(inputText);
+                setIsLoading(false); 
                 setChatMessages([
                     ...newChatMessages,
                     {
@@ -113,7 +131,7 @@
                         id: crypto.randomUUID()
                     }
                 ]);
-                setInputText('');
+                
             }
 
             function handleKeyDown(event) {
@@ -134,8 +152,15 @@
                         onChange={saveInputText}
                         value={inputText}
                         onKeyDown={handleKeyDown}
+                        disabled={isLoading}
                     />
-                    <button class='send' onClick={sendMessage}>Send</button>
+                    <button 
+                        class='send' 
+                        onClick={sendMessage}
+                        disabled={isLoading}
+                    >
+                        Send
+                    </button>
                 </div>
             )
         }
@@ -171,7 +196,7 @@
             );
         }
 
-        function ChatMessages({ chatMessages }) {
+        function ChatMessages({ chatMessages, isLoading }) {
 
             const chatMessagesRef = React.useRef(null);
 
@@ -180,7 +205,7 @@
                if(containerElem){
                 containerElem.scrollTop = containerElem.scrollHeight;
                }
-            },[chatMessages]);
+            },[chatMessages, isLoading]);
 
             return (
                 <div class='chat-messages-container'
@@ -195,12 +220,22 @@
                             />
                         );
                     })}
+
+                    {isLoading && (
+                        <div class="chat-message-robot">
+                            <img src="robot.png" class="chat-message-profile" />
+                            <div class="chat-message-text loading-text">
+                                Typing...
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
 
         }
         function App() {
 
+            const [isLoading, setIsLoading] = React.useState(false);
             const [chatMessages, setChatMessages] = React.useState([{
                 message: "hello Chatbot",
                 sender: "user",
@@ -230,10 +265,13 @@
                 <div class='app-container'>
                     <ChatMessages
                         chatMessages={chatMessages}
+                        isLoading={isLoading}
                     />
                     <ChatInput
                         chatMessages={chatMessages}
                         setChatMessages={setChatMessages}
+                        isLoading={isLoading}
+                        setIsLoading={setIsLoading}
                     />
                 </div>
             );
